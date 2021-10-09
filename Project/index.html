@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="index.css">
+    
+  
+    <title>CardS</title>
+</head>
+<body>
+    <div id="wrapper">
+    <div>
+        <canvas id="kanvas" width="700" height="600" style="border: 1px solid black;">
+            Ne podrzava kanvas
+        </canvas>
+        <br>
+        <label id="label1" for="text">Zadnja prikazana karta: </label>
+        <input id="textbox" type="text" readonly>
+        <br>
+        <label id="label2" for="text">Red je na: </label>
+        <input id="textbox1" type="text" value="Igrac A" readonly>
+    </div>
+        <script>
+            var canvas = document.getElementById('kanvas');
+var ctx = canvas.getContext('2d');
+
+var matricaPolja = [];
+//   https://stackoverflow.com/questions/3689903/how-to-create-a-2d-array-of-zeroes-in-javascript
+var matricaBrojeva = Array(5).fill().map(() => Array(5).fill(0));// matrica koja ce sadrzavati random brojeve smjeske i ljutke, ovdje se popuni nulama 5x5 sve nule
+var ponavljanja = Array(5).fill().map(() => Array(5).fill(0));// ova matrica cuva broj ponavljanja svakog elementa iz ove iznad matrice, na pocetku sve nule 5x5
+
+var brojacPoteza = 0;// povecava se za 1 svaki put kad jedan igrac odigra
+var partija = 0;// poveca se za 1 kad je gotova jedna partija
+
+var igracA = 0,
+    igracB = 0;
+// koordinate za polja iznosa bodova
+var xIgracA = 90;
+var yIgracA = 290;
+var xIgracB = 90;
+var yIgracB = 330;
+
+crtajPolja();// na pocetku same igre potrebno je popuniti matricu polja i nacrtati karte
+matricaRandom();// generise se matrica random brojeva smjeska i ljutka
+crtajOznake();// nacrtaju se oznake Igrac A: i Igrac B:
+
+function Pravougaonik(x, y) {
+    /* konstruktor za pravougaonik */
+    this.x = x;
+    this.y = y;
+    this.w = 60;
+    this.h = 80;
+
+    this.drawPravougaonik = function() {
+        ctx.beginPath();
+        ctx.rect(this.x, this.y, this.w, this.h);
+        ctx.stroke();
+    };
+}
+
+function crtajPolja() {
+    for (var i = 0; i < 5; i++) {
+        var nizpolja = [];
+        for (var j = 0; j < 5; j++) {
+            nizpolja.push(new Pravougaonik(i * 80 + 160, j * 100 + 60));
+        }
+        matricaPolja.push(nizpolja);
+    }
+    for (var i = 0; i < 5; i++) {
+        for (var j = 0; j < 5; j++) {
+            matricaPolja[i][j].drawPravougaonik();
+        }
+    }
+}
+
+function crtajOznake() {
+    ctx.font = '20px Georgia';
+    ctx.fillText('Igrac A:', 10, 290); // ispisuje Igrac A text tacno na koordinate 10/290
+    ctx.fillText('Igrac B:', 10, 330);
+}
+
+function ocistiKanvas() {
+    ctx.clearRect(0, 0, 700, 600); // potpuno cisti kanvas tako da je prazan, bez karti i oznaka
+    crtajPolja();// dodaju se karte
+    crtajOznake();// dodaju se oznake za igrac A i igrac B
+}
+
+function popuniIznos() {
+    ocistiKanvas();// posto kanvas pise stvari jednu preko drugo, mora se ocistiti svaki put iznova kad zelimo napisati neki tekst na vec iskoristenu poziciju
+    ctx.fillText('' + igracA, xIgracA, yIgracA);// ovo ce ispisati trenutni zbroj bodova za igraca a tacno na koordinate ove xIgracA I yIgracA
+    ctx.fillText('' + igracB, xIgracB, yIgracB);
+}
+
+function matricaRandom() {
+    var br1 = 0,// brojaci za smjeska ljutka i brojeve
+        br2 = 0,
+        br3 = 0;
+    while (br1 < 17) {
+        // posto je 17 brojeva, ovo ce se vrsit dok se ne smjesti 17 brojeva u matricu brojeva
+        var broj = Math.ceil(Math.random() * 10);  // random broj od 1 2 3 ... 10
+        index = randomIndex();
+        if (matricaBrojeva[index.i][index.j] == 0) {
+            br1++;
+            matricaBrojeva[index.i][index.j] = broj;
+        }
+    }
+    while (br2 < 4) {
+        index = randomIndex();
+        if (matricaBrojeva[index.i][index.j] == 0) {
+            br2++;
+            matricaBrojeva[index.i][index.j] = 'S';
+        }
+    }
+    while (br3 < 4) {
+        index = randomIndex();
+        if (matricaBrojeva[index.i][index.j] == 0) {
+            br3++;
+            matricaBrojeva[index.i][index.j] = 'L';
+        }
+        // kod iznad ce da smjesti slovo S ili L na random poziciju u matrici koje je 0 - koje nije zauzeto jos uvijek
+    }
+    console.log(matricaBrojeva); // ovo je radi provjere da se vidi gdje je sta na tabli
+}
+
+function randomIndex() {
+    var index1 = Math.floor(Math.random() * 5);
+    var index2 = Math.floor(Math.random() * 5);
+    var rez = {
+        // pravi se objekat koji se zove rez i koji sadrzi 2 kljuca i 2 vrijednosti, i i j su kljucevi, a index1 i index2 su vrijednosti, a to su ovi random brojevi od 0-4
+
+        i: index1,
+        j: index2
+    };
+    return rez;
+}
+
+canvas.addEventListener(
+    // dodaje se prisluskivac dogadjaja, koji ce da se aktivira ukoliko korisnik klikne bilo gdje na kanvas
+    'mousedown',
+    function(event) {
+        var kliknutaKarta = null;// na pocetku ne postoji kliknutaKarta jer  jos nismo provjerili koja je, imamo  samo tacku koju je kliknuo korisnik
+        var rect = canvas.getBoundingClientRect();// ovo vraca poziciju canvasa u odnosu na citavo vidno polje prozora
+        var x = event.clientX - rect.left;// ovo je koordinata x u odnosu na pocetak kanvasa
+        var y = event.clientY - rect.top;// ovo je koordinata y u odnosu na pocetak kanvasa - gornji lijevi cosak za oba
+        var red, kolona;
+        for (var i = 0; i < 5; i++) {
+            // prolazi se kroz svaki clan matrice polja koja sadrzi koordinate svih karata i provjerava da li ijedna od 25 karata sadrzi ovu kliknutu tacku
+            for (var j = 0; j < 5; j++) {
+                // sadrzavat ce je samo ukoliko vrijede ovi ispod uslovi, to znaci da je tacka unutar ove karte.
+                if (
+                    matricaPolja[i][j].x <= x &&
+                    matricaPolja[i][j].x + 60 >= x &&
+                    matricaPolja[i][j].y <= y &&
+                    matricaPolja[i][j].y + 80 >= y
+                ) {
+                    red = j;//posto smo nasli koja karta je u pitanju mozemo upamtiti red i kolonu da su jednaki redu i koloni pronadjenog clana u matrici
+                    kolona = i;
+                    kliknutaKarta = matricaPolja[i][j];// sad tek kliknuta karta dobiva pravu vrijednost jer postoji - nije kliknuto van karata, tad bi jos uvijek bilo null i neiskoristivo.
+                }
+            }
+        }
+        if (kliknutaKarta !== null) {
+            
+
+            // ako je pronadjena karta koji sadrzi kliknutu tacku sa kanvasa
+            var textbox = document.getElementById('textbox');
+            var textbox1 = document.getElementById('textbox1');
+            textbox.value = matricaBrojeva[red][kolona];
+            if (brojacPoteza % 2 == 0) {
+                // ako je brojacpoteza paran paraj znaci da je igra a na potezu
+                //Igrac a igra
+                if (matricaBrojeva[red][kolona] == 'S') {
+                    igracA = igracA * 2;
+                    popuniIznos();// poziva se metoda koja ce da prikaze - refresuju zbroj poena oba igraca i prikaze ih na kanvasu
+                    matricaBrojeva[red][kolona] = Math.ceil(Math.random() * 10);
+                    var index = randomIndex();// zatim se dobavi novi random index reda i kolone
+                    matricaBrojeva[index.i][index.j] = 'S';// pa zatim se nekom random clanu u matrici dodijeli vrijednost S, odnosno smjesto postaje novo polje neko.
+                } else if (matricaBrojeva[red][kolona] == 'L') {
+                    igracA = 0;
+                    popuniIznos();
+                    matricaBrojeva[red][kolona] = Math.ceil(Math.random() * 10);
+                    var index = randomIndex();
+                    matricaBrojeva[index.i][index.j] = 'L';// pa zatim se nekom random clanu u matrici dodijeli vrijednost L, odnosno smjesto postaje novo polje neko.
+                } else {
+                    igracA += matricaBrojeva[red][kolona];//ukoliko kliknuto polje nije ni smjesko ni ljutko sigurno je broj od 1-10, u tom slucaju samo se taj broj doda na trenutan zbir bodova
+                    popuniIznos();
+                    if (ponavljanja[red][kolona] >= red + kolona) {// ukoliko je broj ponavljanja kliknutog elementa veci ili jednak zbiru reda i kolone tog istog elementa, tom elementu je potrebno promijeniti vrijednost - random novi broj, a do dat ce ostat isti
+                        matricaBrojeva[red][kolona] = Math.ceil(Math.random() * 10);// novi random broj
+                        ponavljanja[red][kolona] = 0;// resetuje se brojac ponavljanja na 0 jer je doslo do ovog uslova da je true
+                    }
+                    ponavljanja[red][kolona] += 1;// konacno, posto je kliknut broj, potrebno je u matricu ponavljanja povecati broj ponavljanja trenutni kliknutog elementa za 1
+                }
+                textbox1.value = 'Igrac B';// nakon sto je igrac a odigrao, potez se prebacuje na drugog - igracaB, pa se to prikaze na input-u za red
+            } else {
+                // Igrac B igra
+                if (matricaBrojeva[red][kolona] == 'S') {
+                    // SVE ISTO KAO GORE CE SE URADITI ZA IGRACA B
+                    igracB = igracB * 2;
+                    popuniIznos();
+                    matricaBrojeva[red][kolona] = Math.ceil(Math.random() * 10);
+                    var index = randomIndex();
+                    matricaBrojeva[index.i][index.j] = 'S';
+                } else if (matricaBrojeva[red][kolona] == 'L') {
+                    igracB = 0;
+                    popuniIznos();
+                    matricaBrojeva[red][kolona] = Math.ceil(Math.random() * 10);
+                    var index = randomIndex();
+                    matricaBrojeva[index.i][index.j] = 'L';
+                } else {
+                    igracB += matricaBrojeva[red][kolona];
+                    popuniIznos();
+                    if (ponavljanja[red][kolona] >= red + kolona) {
+                        matricaBrojeva[red][kolona] = Math.ceil(Math.random() * 10);
+                        ponavljanja[red][kolona] = 0;
+                    }
+                    ponavljanja[red][kolona] += 1;
+                }
+                textbox1.value = 'Igrac A';
+            }
+
+            brojacPoteza++;// nakon svega ovoga iznad zavrseno je sve oko klika trenutnog zbog kojeg smo usli u ovaj mousedown event, potrebno je konacno povecati broj poteza za 1 jer je gotov 1 potez.
+        }
+    },
+    false
+);
+
+//provjera za kraj
+interval = setInterval(() => {
+    //setInterval funkcija poziva samu sebe svakih 1000 milisekundi sto je uslov na samom dnu dole i vrsit ce se tokom citave duzine programa sve dok ne dodje do kraja igre i, jer onda resetujemo zbroj bodova, pa nece biti zadovoljen prvi uslov.
+    //funkciju i njeno djelovanje nasao na https://www.w3schools.com/
+    if (igracA > 49 || igracB > 49) {
+        //ako je ko pobjedio
+        partija++;//broj paritija se povecava
+        if (igracA > 49) alert('Igrac A je pobjedio');
+        else alert('Igrac B je pobjedio');
+        // resetuje se sve na nulu, od zbroja bodova do kanvasa, do obje matrice, pa oba inputa, a na kraju se generise ponovo matrica random brojeva za novu igru
+    
+        igracA = 0;
+        igracB = 0;
+        ocistiKanvas();
+        matricaBrojeva = Array(5).fill().map(() => Array(5).fill(0));
+        ponavljanja = Array(5).fill().map(() => Array(5).fill(0));
+        document.getElementById('textbox').value = '';
+        document.getElementById('textbox1').value = '';
+        // ponovo se popuni matrica random
+        matricaRandom();
+        setTimeout(() => {
+            // setTimeout funkcija ce se izvrsiti samo jednom ali nakon pauze od 1500 milisekundi u trenutku kad kod stigne do nje
+            //takodjer funkcije i njeno djelovanje shvatio na https://www.w3schools.com/
+            var pitanje = confirm('Ponovna igra?'); // drugim rijecima ovaj confirm pop up koji ce nas pitati ponovna igra? ce se pojaviti tacno sekundu i po nakon sto se pojavio onaj alert koji je pokazao ko je pobjednik.
+            if (pitanje == true) {
+                // ako je korisnik kliknuo na Da kao odgovor pitanja
+                //te ako je broj partija neparan igracB je na potezu
+                if (partija % 2 == 1) {
+                    brojacPoteza = 1;// neparan broj signal za B igraca
+                    document.getElementById('textbox1').value = 'Igrac B';
+                } else {
+                    brojacPoteza = 0;
+                    document.getElementById('textbox1').value = 'Igrac A';
+                }
+            } else {
+                // ukoliko korisnik ne zeli ponovno da igra igricu bit ce prebacen na pocetnu stranicu.
+            
+                window.location.href="pocetna.html"
+            }
+        }, 1500);
+    }
+}, 1000);
+
+        </script>
+    </div>
+</body>
+</html>
