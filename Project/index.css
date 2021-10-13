@@ -1,6 +1,7 @@
 #wrapper{
 	position: relative;
 	left: 27%;
+		overflow-x: hidden;
 }
 #kanvas {
 			background-image: url("pozadina.jpg");
